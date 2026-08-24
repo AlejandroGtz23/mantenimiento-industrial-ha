@@ -1,0 +1,88 @@
+name: mantenimiento-ha
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: deploy/nginx/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend-1
+      - backend-2
+      - demo-1
+      - demo-2
+    networks:
+      - maintenance-network
+    restart: unless-stopped
+
+  # Réplicas explícitas: funcionan con Docker Compose normal, sin requerir Swarm.
+  backend-1: &backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      APP_PORT: ":8081"
+      DB_DSN: "sysdba:${FIREBIRD_ROOT_PASSWORD:-Academico2026!}@firebird:3050//var/lib/firebird/data/mantenimiento.fdb"
+      REDIS_HOST: redis
+      JWT_SECRET: "${JWT_SECRET:-cambia-este-secreto-jwt-antes-de-exponer}"
+      QR_SECRET: "${QR_SECRET:-cambia-este-secreto-qr-antes-de-exponer}"
+      EVIDENCE_DIRECTORY: /app/uploads/mantenimiento
+      BOOTSTRAP_ADMIN_USER: "${BOOTSTRAP_ADMIN_USER:-admin}"
+      BOOTSTRAP_ADMIN_PASSWORD: "${BOOTSTRAP_ADMIN_PASSWORD:-Admin123!}"
+    volumes:
+      - ./deploy/data/uploads:/app/uploads:Z
+    depends_on:
+      redis:
+        condition: service_healthy
+      firebird:
+        condition: service_started
+    networks:
+      - maintenance-network
+    restart: on-failure
+
+  backend-2:
+    <<: *backend
+
+  redis:
+    image: redis:7.4-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - ./deploy/data/redis:/data:Z
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - maintenance-network
+    restart: unless-stopped
+
+  firebird:
+    image: firebirdsql/firebird:5.0
+    environment:
+      FIREBIRD_ROOT_PASSWORD: "${FIREBIRD_ROOT_PASSWORD:-Academico2026!}"
+      FIREBIRD_DATABASE: mantenimiento.fdb
+      FIREBIRD_DATABASE_DEFAULT_CHARSET: UTF8
+    volumes:
+      - ./deploy/data/firebird:/var/lib/firebird/data:Z
+    networks:
+      - maintenance-network
+    restart: unless-stopped
+
+  demo-1: &demo
+    build: ./deploy/balance-demo
+    environment:
+      DEMO_NAME: "demo-1"
+    networks:
+      - maintenance-network
+    restart: unless-stopped
+
+  demo-2:
+    <<: *demo
+    environment:
+      DEMO_NAME: "demo-2"
+
+networks:
+  maintenance-network:
+    driver: bridge

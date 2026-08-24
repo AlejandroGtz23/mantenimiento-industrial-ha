@@ -1,0 +1,12 @@
+.git
+.env
+uploads
+deploy/data
+frontend/node_modules
+frontend/.yarn/cache
+frontend/.yarn/install-state.gz
+internal/web/dist
+mobile-android/.gradle
+mobile-android/app/build
+*.exe
+*.fbk

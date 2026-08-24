@@ -1,0 +1,10 @@
+package mx.edu.accesoindustrial
+import android.os.Bundle
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.google.gson.Gson
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+class MaintenanceChecklistActivity:AppCompatActivity(){private val checks=mutableListOf<Pair<MaintenanceChecklistItem,CheckBox>>();private lateinit var button:Button;private val machineId by lazy{intent.getStringExtra("machine_id")!!};override fun onCreate(s:Bundle?){super.onCreate(s);val root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(36,36,36,36)};root.addView(TextView(this).apply{text="Checklist: ${intent.getStringExtra("machine_name")}";textSize=24f});val notes=EditText(this).apply{hint="Observaciones generales";minLines=3};button=Button(this).apply{text="Enviar mantenimiento";isEnabled=false};root.addView(notes);setContentView(ScrollView(this).apply{addView(root)});lifecycleScope.launch{try{MaintenanceContainer.api.checklist(machineId).forEach{item->val c=CheckBox(this@MaintenanceChecklistActivity).apply{text=item.descripcion;textSize=17f};checks+=item to c;root.addView(c)};root.addView(button);button.isEnabled=true;button.setOnClickListener{lifecycleScope.launch{if(checks.any{!it.second.isChecked}){Toast.makeText(this@MaintenanceChecklistActivity,"Marca todos los puntos",Toast.LENGTH_LONG).show();return@launch};button.isEnabled=false;try{val type="text/plain".toMediaType();MaintenanceContainer.api.register(machineId.toRequestBody(type),Gson().toJson(checks.map{MaintenanceDetail(it.first.id,it.second.isChecked)}).toRequestBody(type),notes.text.toString().toRequestBody(type));Toast.makeText(this@MaintenanceChecklistActivity,"Mantenimiento enviado",Toast.LENGTH_LONG).show();finish()}catch(e:Exception){button.isEnabled=true;Toast.makeText(this@MaintenanceChecklistActivity,"No se pudo enviar",Toast.LENGTH_LONG).show()}}}}catch(e:Exception){root.addView(TextView(this@MaintenanceChecklistActivity).apply{text="No se pudo cargar el checklist"})}}}}

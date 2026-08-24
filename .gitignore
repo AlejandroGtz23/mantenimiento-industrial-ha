@@ -1,0 +1,33 @@
+# Secretos y archivos locales de configuración
+.env
+.env.*
+!.env.docker.example
+
+# Datos persistentes y evidencias generadas en ejecución
+uploads/
+deploy/data/
+*.fdb
+*.fbk
+
+# Dependencias y artefactos web
+frontend/node_modules/
+frontend/.yarn/cache/
+frontend/.yarn/install-state.gz
+internal/web/dist/
+
+# Artefactos Android/Gradle
+mobile-android/.gradle/
+mobile-android/.gradle-user-home/
+mobile-android/**/build/
+mobile-android/local.properties
+*.apk
+*.aab
+
+# Binarios y archivos de sistema/IDE
+*.exe
+*.log
+.idea/
+.vscode/
+*.iml
+Thumbs.db
+Desktop.ini
