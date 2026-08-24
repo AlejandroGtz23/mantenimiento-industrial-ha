@@ -59,7 +59,7 @@ services:
     restart: unless-stopped
 
   firebird:
-    image: firebirdsql/firebird:5.0
+    image: firebirdsql/firebird:5.0.4
     environment:
       FIREBIRD_ROOT_PASSWORD: "${FIREBIRD_ROOT_PASSWORD:-Academico2026!}"
       FIREBIRD_DATABASE: mantenimiento.fdb
